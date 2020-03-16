@@ -152,9 +152,9 @@ all.equal(c(py_data$shipped_quantity, py_data$order_quantity), c(merged_data$shi
 
 #### Question 4
 
-Say, you have built a forecast model, and you get the following
-forecasts at state-by-month-level. Could you pivot this data from long
-to wide format? Each row will show the state information.  
+Say, you have built a forecast model, and you get the forecasts at
+state-by-month-level. Could you pivot this data from long to wide
+format? Each row will show the state information.  
 Python warning: State should remain as a separate column in the data.
 
 #### R
