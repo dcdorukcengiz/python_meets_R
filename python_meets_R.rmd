@@ -1,0 +1,176 @@
+---
+title: "Python Meets R"
+author: "Doruk Cengiz"
+output: github_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+```
+
+In this document, we will use R and Python for a set of relatively straightforward data wrangling tasks. This entire document is written in RMarkdown, so it will provide a nice example for how to use Python and R simultaneously in one document. We will rely on the fantastic *reticulate* package.  
+
+The small data set that is provided is made up and these questions are proposed to be used in a data science interview coding test. 
+
+####  Question 1  
+
+Could you export the data and replace NA values in Quantity column with 0?
+
+####  R  
+
+```{r, echo=T, warning=FALSE, message=F}
+library(tidyverse)
+library(readxl)
+library(reticulate)
+dt <- read_excel('data/wrangling_data.xlsx', 
+                   sheet =  'Sheet1')
+
+dt_NA_replace <- dt %>% 
+  mutate(shipped_quantity = replace_na(shipped_quantity, replace = 0))
+sum(is.na(dt))
+sum(is.na(dt_NA_replace))
+
+```
+
+#### Python
+
+```{python, echo=T, warning=FALSE, message=F}
+
+import numpy as np
+import pandas as pd
+
+#Obtain the data
+#Step 0
+dt = pd.read_excel('data/wrangling_data.xlsx', 
+                   sheet_name  = 'Sheet1')
+
+#Step 1
+#Method 1
+dt_NA_replace = dt.copy()
+dt_NA_replace['shipped_quantity'] = dt['shipped_quantity'].fillna(0)
+
+dt.isnull().sum().sum()
+dt_NA_replace.isnull().sum().sum()
+
+```
+
+Confirm that python and R outputs are identical using R's all.equal function: 
+```{r, echo=T, warning=FALSE, message=F}
+python_data <- py$dt_NA_replace
+all.equal(python_data$shipped_quantity, dt_NA_replace$shipped_quantity)
+
+```
+
+
+#### Question 2
+
+Could you aggregate data by State AND MonthBucket using SUM of quantities as aggregation? Python warning: State and MonthBucket should remain as separate columns in the data.
+
+#### R
+
+```{r, echo=T, warning=FALSE, message=F}
+dt_aggregated <- dt_NA_replace %>% 
+  group_by(state, month_bucket) %>% 
+  summarise(shipped_quantity = sum(shipped_quantity))
+
+```
+
+#### Python
+
+The trick here is that we need to have State and Month as separate columns, not as index. So, pandas users should be careful. I personally prefer "transform" and "agg" functions in python, though it can be avoided with the use of sum method. 
+
+```{python, echo=T, warning=FALSE, message=F}
+
+dt_aggregated = dt_NA_replace.groupby(['state', 'month_bucket'], as_index = False)[['shipped_quantity']].\
+        agg(lambda x: x.sum())
+
+
+```
+
+Again, let's double check. We are overwriting the "py_data" since the previous one is of no use to us.
+
+```{r}
+py_data <- py$dt_aggregated
+all.equal(py_data$shipped_quantity, dt_aggregated$shipped_quantity)
+```
+
+#### Question 3
+Assume that later on, you have another dataset with different information (say, order information). Could you join this data with the previous data?
+
+#### R 
+
+First, we need to get the data, then we merge it with the "aggregated data".
+
+```{r}
+order_data <- read_excel('data/wrangling_data.xlsx', 
+                   sheet =  'Sheet3')
+
+merged_data <- dt_aggregated %>% 
+  left_join(order_data, by = c("state", "month_bucket"))
+
+```
+
+#### Python
+
+```{python}
+order_data = pd.read_excel('data/wrangling_data.xlsx', 
+                   sheet_name  = 'Sheet3')
+                   
+merged_data = pd.merge(dt_aggregated, order_data, on = ['state', 'month_bucket'], how = 'left')
+
+```
+
+Again, let's confirm:
+
+
+```{r}
+py_data <- py$merged_data
+all.equal(c(py_data$shipped_quantity, py_data$order_quantity), c(merged_data$shipped_quantity, merged_data$order_quantity))
+```
+
+
+#### Question 4
+
+Say, you have built a forecast model, and you get the following forecasts at state-by-month-level. Could you pivot this data from long to wide format? Each row will show the state information.     
+Python warning: State should remain as a separate column in the data.
+
+#### R
+
+```{r}
+
+forecasts <- read_excel('data/wrangling_data.xlsx', 
+                   sheet  = 'Sheet2')
+
+forecasts_wide <- forecasts %>% 
+  pivot_wider(names_from = "month_bucket", values_from = "forecast_quantity", id_cols = "state") %>% 
+  arrange(state)
+knitr::kable(forecasts_wide)
+
+
+```
+
+#### Python
+
+To show the Python data, we will first produce it in python, then bring it back to R.
+
+
+```{python}
+
+forecasts = pd.read_excel('data/wrangling_data.xlsx', 
+                   sheet_name  = 'Sheet2')
+
+forecasts_wide =  forecasts.pivot(index = 'state', columns = 'month_bucket', 
+                                  values = 'forecast_quantity').reset_index()
+
+```
+
+```{r}
+py_data <- py$forecasts_wide
+knitr::kable(py_data)
+
+```
+
+
+As seen, we can do everything in python or in R and jump from one to another using RStudio. 
+
+
