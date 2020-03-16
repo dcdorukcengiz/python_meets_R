@@ -94,8 +94,8 @@ dt_aggregated <- dt_NA_replace %>%
 
 The trick here is that we need to have State and Month as separate
 columns, not as index. So, pandas users should be careful. I personally
-prefer “transform” and “agg” functions in python, though it can be
-avoided with the use of sum method.
+prefer “transform” and “agg” functions in python, though one can use the
+sum method.
 
 ``` python
 
@@ -152,9 +152,9 @@ all.equal(c(py_data$shipped_quantity, py_data$order_quantity), c(merged_data$shi
 
 #### Question 4
 
-Say, you have built a forecast model, and you get the following
-forecasts at state-by-month-level. Could you pivot this data from long
-to wide format? Each row will show the state information.  
+Say, you have built a forecast model, and you get the forecasts at
+state-by-month-level. Could you pivot this data from long to wide
+format? Each row will show the state information.  
 Python warning: State should remain as a separate column in the data.
 
 #### R
